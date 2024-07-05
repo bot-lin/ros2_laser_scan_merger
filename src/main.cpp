@@ -90,7 +90,7 @@ private:
     tf2::Transform transform;
     transform.setOrigin(tf2::Vector3(x_offset, y_offset, 0.0));
     tf2::Quaternion q;
-    q.setRPY(0, 0, yaw_offset * M_PI / 180.0);
+    q.setRPY(0, 0, yaw_offset);
     transform.setRotation(q);
 
     float angle = input_scan->angle_min;
