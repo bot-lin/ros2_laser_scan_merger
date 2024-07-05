@@ -67,8 +67,9 @@ private:
     auto merged_scan = std::make_shared<sensor_msgs::msg::LaserScan>();
     merged_scan->header.stamp = this->now();
     merged_scan->header.frame_id = "base_link";
-    merged_scan->angle_min = std::min(laser1_->angle_min, laser2_->angle_min);
-    merged_scan->angle_max = std::max(laser1_->angle_max, laser2_->angle_max);
+    double min_angle = 0.0 
+    merged_scan->angle_min = 0.0;
+    merged_scan->angle_max = 2 * M_PI;
     merged_scan->angle_increment = std::min(laser1_->angle_increment, laser2_->angle_increment);
     merged_scan->time_increment = std::min(laser1_->time_increment, laser2_->time_increment);
     merged_scan->scan_time = std::max(laser1_->scan_time, laser2_->scan_time);
