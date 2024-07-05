@@ -37,6 +37,7 @@ public:
         topic2_, default_qos, std::bind(&scanMerger::scan_callback2, this, std::placeholders::_1));
 
     point_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(cloudTopic_, rclcpp::SensorDataQoS());
+    laser_scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan/merge", rclcpp::SensorDataQoS());
     RCLCPP_INFO(this->get_logger(), "Hello");
   }
 
@@ -44,7 +45,8 @@ private:
   void scan_callback1(const sensor_msgs::msg::LaserScan::SharedPtr _msg)
   {
     laser1_ = _msg;
-    update_point_cloud_rgb();
+    update_merged_scan();
+    // update_point_cloud_rgb();
     // RCLCPP_INFO(this->get_logger(), "I heard: '%f' '%f'", _msg->ranges[0],
     //         _msg->ranges[100]);
   }
@@ -53,6 +55,54 @@ private:
     laser2_ = _msg;
     // RCLCPP_INFO(this->get_logger(), "I heard: '%f' '%f'", _msg->ranges[0],
     //         _msg->ranges[100]);
+  }
+
+    void update_merged_scan()
+  {
+    refresh_params();
+    if (!laser1_ || !laser2_) {
+      return;
+    }
+
+    auto merged_scan = std::make_shared<sensor_msgs::msg::LaserScan>();
+    merged_scan->header.stamp = this->now();
+    merged_scan->header.frame_id = "base_link";
+    merged_scan->angle_min = std::min(laser1_->angle_min, laser2_->angle_min);
+    merged_scan->angle_max = std::max(laser1_->angle_max, laser2_->angle_max);
+    merged_scan->angle_increment = std::min(laser1_->angle_increment, laser2_->angle_increment);
+    merged_scan->time_increment = std::min(laser1_->time_increment, laser2_->time_increment);
+    merged_scan->scan_time = std::max(laser1_->scan_time, laser2_->scan_time);
+    merged_scan->range_min = std::min(laser1_->range_min, laser2_->range_min);
+    merged_scan->range_max = std::max(laser1_->range_max, laser2_->range_max);
+
+    size_t total_ranges = static_cast<size_t>((merged_scan->angle_max - merged_scan->angle_min) / merged_scan->angle_increment);
+    merged_scan->ranges.resize(total_ranges, std::numeric_limits<float>::infinity());
+    merged_scan->intensities.resize(total_ranges, 0.0);
+
+    merge_laser_scan(laser1_, merged_scan);
+    merge_laser_scan(laser2_, merged_scan);
+
+    laser_scan_pub_->publish(*merged_scan);
+  }
+
+  void merge_laser_scan(const sensor_msgs::msg::LaserScan::SharedPtr& input_scan, const sensor_msgs::msg::LaserScan::SharedPtr& output_scan)
+  {
+    float angle = input_scan->angle_min;
+    for (size_t i = 0; i < input_scan->ranges.size(); ++i) {
+      if (input_scan->ranges[i] < input_scan->range_min || input_scan->ranges[i] > input_scan->range_max) {
+        angle += input_scan->angle_increment;
+        continue;
+      }
+
+      size_t index = static_cast<size_t>((angle - output_scan->angle_min) / output_scan->angle_increment);
+      if (index < output_scan->ranges.size()) {
+        if (input_scan->ranges[i] < output_scan->ranges[index]) {
+          output_scan->ranges[index] = input_scan->ranges[i];
+          output_scan->intensities[index] = input_scan->intensities[i];
+        }
+      }
+      angle += input_scan->angle_increment;
+    }
   }
 
   void update_point_cloud_rgb()
@@ -301,7 +351,7 @@ private:
   {
     this->get_parameter_or<std::string>("pointCloudTopic", cloudTopic_, "pointCloud");
     this->get_parameter_or<std::string>("pointCloutFrameId", cloudFrameId_, "laser");
-    this->get_parameter_or<std::string>("scanTopic1", topic1_, "lidar_front_right/scan");
+    this->get_parameter_or<std::string>("scanTopic1", topic1_, "scan");
     this->get_parameter_or<float>("laser1XOff", laser1XOff_, 0.0);
     this->get_parameter_or<float>("laser1YOff", laser1YOff_, 0.0);
     this->get_parameter_or<float>("laser1ZOff", laser1ZOff_, 0.0);
@@ -339,6 +389,8 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub1_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub2_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr laser_scan_pub_;
+  
 
   sensor_msgs::msg::LaserScan::SharedPtr laser1_;
   sensor_msgs::msg::LaserScan::SharedPtr laser2_;
