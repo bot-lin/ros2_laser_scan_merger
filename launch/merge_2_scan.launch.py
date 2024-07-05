@@ -39,14 +39,14 @@ def generate_launch_description():
         # ),
 
         # Call pointcloud_to_laserscan package
-        launch_ros.actions.Node(
-            name='pointcloud_to_laserscan',
-            package='pointcloud_to_laserscan',
-            executable='pointcloud_to_laserscan_node',
-            parameters=[config],
-            remappings=[
-                ('scan', 'scan_merger')
-            ],
-        )
+        # launch_ros.actions.Node(
+        #     name='pointcloud_to_laserscan',
+        #     package='pointcloud_to_laserscan',
+        #     executable='pointcloud_to_laserscan_node',
+        #     parameters=[config],
+        #     remappings=[
+        #         ('scan', 'scan_merger')
+        #     ],
+        # )
         
     ])
