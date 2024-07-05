@@ -67,8 +67,8 @@ private:
     auto merged_scan = std::make_shared<sensor_msgs::msg::LaserScan>();
     merged_scan->header.stamp = this->now();
     merged_scan->header.frame_id = "base_link";
-    merged_scan->angle_min = 0.0;
-    merged_scan->angle_max = 2 * M_PI;
+    merged_scan->angle_min = -M_PI;
+    merged_scan->angle_max = M_PI;
     merged_scan->angle_increment = std::min(laser1_->angle_increment, laser2_->angle_increment);
     merged_scan->time_increment = std::min(laser1_->time_increment, laser2_->time_increment);
     merged_scan->scan_time = std::max(laser1_->scan_time, laser2_->scan_time);
@@ -79,14 +79,20 @@ private:
     merged_scan->ranges.resize(total_ranges, std::numeric_limits<float>::infinity());
     merged_scan->intensities.resize(total_ranges, 0.0);
 
-    merge_laser_scan(laser1_, merged_scan);
-    merge_laser_scan(laser2_, merged_scan);
+    merge_laser_scan(laser1_, merged_scan, 0.31, -0.205, 2.35619);
+    merge_laser_scan(laser2_, merged_scan, -0.31, 0.21, -0.785398);
 
     laser_scan_pub_->publish(*merged_scan);
   }
 
-  void merge_laser_scan(const sensor_msgs::msg::LaserScan::SharedPtr& input_scan, const sensor_msgs::msg::LaserScan::SharedPtr& output_scan)
+  void merge_laser_scan(const sensor_msgs::msg::LaserScan::SharedPtr& input_scan, const sensor_msgs::msg::LaserScan::SharedPtr& output_scan, float x_offset, float y_offset, float yaw_offset)
   {
+    tf2::Transform transform;
+    transform.setOrigin(tf2::Vector3(x_offset, y_offset, 0.0));
+    tf2::Quaternion q;
+    q.setRPY(0, 0, yaw_offset * M_PI / 180.0);
+    transform.setRotation(q);
+
     float angle = input_scan->angle_min;
     for (size_t i = 0; i < input_scan->ranges.size(); ++i) {
       if (input_scan->ranges[i] < input_scan->range_min || input_scan->ranges[i] > input_scan->range_max) {
@@ -94,10 +100,21 @@ private:
         continue;
       }
 
-      size_t index = static_cast<size_t>((angle - output_scan->angle_min) / output_scan->angle_increment);
+      tf2::Vector3 point(input_scan->ranges[i] * std::cos(angle), input_scan->ranges[i] * std::sin(angle), 0.0);
+      point = transform * point;
+
+      float transformed_angle = std::atan2(point.y(), point.x());
+      float transformed_range = point.length();
+
+      if (transformed_angle < output_scan->angle_min || transformed_angle > output_scan->angle_max) {
+        angle += input_scan->angle_increment;
+        continue;
+      }
+
+      size_t index = static_cast<size_t>(std::round((transformed_angle - output_scan->angle_min) / output_scan->angle_increment));
       if (index < output_scan->ranges.size()) {
-        if (input_scan->ranges[i] < output_scan->ranges[index]) {
-          output_scan->ranges[index] = input_scan->ranges[i];
+        if (transformed_range < output_scan->ranges[index]) {
+          output_scan->ranges[index] = transformed_range;
           output_scan->intensities[index] = input_scan->intensities[i];
         }
       }
