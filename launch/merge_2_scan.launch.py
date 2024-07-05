@@ -11,7 +11,7 @@ from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument
 
 def generate_launch_description():
-    config = os.path.join(
+    config = os.path.join( 
         get_package_share_directory('ros2_laser_scan_merger'),
         'config',
         'params.yaml'
@@ -43,7 +43,10 @@ def generate_launch_description():
             name='pointcloud_to_laserscan',
             package='pointcloud_to_laserscan',
             executable='pointcloud_to_laserscan_node',
-            parameters=[config]
+            parameters=[config],
+            remappings=[
+                ('scan', 'scan_merger')
+            ],
         )
         
     ])
