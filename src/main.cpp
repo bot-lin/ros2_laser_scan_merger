@@ -75,7 +75,7 @@ private:
     merged_scan->range_min = std::min(laser1_->range_min, laser2_->range_min);
     merged_scan->range_max = std::max(laser1_->range_max, laser2_->range_max);
 
-    size_t total_ranges = static_cast<size_t>((merged_scan->angle_max - merged_scan->angle_min) / merged_scan->angle_increment);
+    size_t total_ranges = static_cast<size_t>((merged_scan->angle_max - merged_scan->angle_min) / merged_scan->angle_increment) +1;
     merged_scan->ranges.resize(total_ranges, std::numeric_limits<float>::infinity());
     merged_scan->intensities.resize(total_ranges, 0.0);
 
