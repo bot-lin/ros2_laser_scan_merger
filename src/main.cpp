@@ -95,8 +95,9 @@ private:
 
     float angle = input_scan->angle_min;
     for (size_t i = 0; i < input_scan->ranges.size(); ++i) {
+      angle = input_scan->angle_min + i * input_scan->angle_increment;
       if (input_scan->ranges[i] < input_scan->range_min || input_scan->ranges[i] > input_scan->range_max) {
-        angle += input_scan->angle_increment;
+        // angle += input_scan->angle_increment;
         continue;
       }
 
@@ -107,7 +108,7 @@ private:
       float transformed_range = point.length();
 
       if (transformed_angle < output_scan->angle_min || transformed_angle > output_scan->angle_max) {
-        angle += input_scan->angle_increment;
+        // angle += input_scan->angle_increment;
         continue;
       }
 
@@ -118,7 +119,7 @@ private:
           output_scan->intensities[index] = input_scan->intensities[i];
         }
       }
-      angle += input_scan->angle_increment;
+      // angle += input_scan->angle_increment;
     }
   }
 
