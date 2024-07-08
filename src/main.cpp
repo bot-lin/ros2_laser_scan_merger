@@ -29,6 +29,10 @@ public:
 
     laser1_ = std::make_shared<sensor_msgs::msg::LaserScan>();
     laser2_ = std::make_shared<sensor_msgs::msg::LaserScan>();
+    tf_buffer_ =
+      std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    transform_listener_ =
+      std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
     auto default_qos = rclcpp::QoS(rclcpp::SensorDataQoS());
     sub1_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
@@ -91,19 +95,19 @@ private:
         //scan1
         std::string fromFrameRel ="laser";
         transformStamped = tf_buffer_->lookupTransform(
-          fromFrameRel, target_frame_,
+          fromFrameRel, "base_link",
           tf2::TimePointZero);
           //print the transform translation and rotation
     RCLCPP_INFO(this->get_logger(), "I heard: '%f' '%f'", transformStamped.transform.translation.x,
             transformStamped.transform.translation.y);
     //convert quanternion to rpy
-    tf2::Quaternion q(
+    tf2::Quaternion q1(
       transformStamped.transform.rotation.x,
       transformStamped.transform.rotation.y,
       transformStamped.transform.rotation.z,
       transformStamped.transform.rotation.w);
     double roll, pitch, yaw;
-    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+    tf2::Matrix3x3(q1).getRPY(roll, pitch, yaw);
     RCLCPP_INFO(this->get_logger(), "I heard: '%f' '%f' '%f'", roll,
             pitch, yaw);
     tf2::Transform transform;
@@ -422,6 +426,8 @@ private:
 
   float laser2XOff_, laser2YOff_, laser2ZOff_, laser2Alpha_, laser2AngleMin_, laser2AngleMax_;
   uint8_t laser2R_, laser2G_, laser2B_;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+    std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub1_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub2_;
