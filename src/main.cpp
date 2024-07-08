@@ -66,7 +66,7 @@ private:
 
     auto merged_scan = std::make_shared<sensor_msgs::msg::LaserScan>();
     merged_scan->header.stamp = this->now();
-    merged_scan->header.frame_id = "base_link";
+    merged_scan->header.frame_id = "laser";
     merged_scan->angle_min = -M_PI;
     merged_scan->angle_max = M_PI;
     merged_scan->angle_increment = std::min(laser1_->angle_increment, laser2_->angle_increment);
@@ -79,8 +79,8 @@ private:
     merged_scan->ranges.resize(total_ranges, std::numeric_limits<float>::infinity());
     merged_scan->intensities.resize(total_ranges, 0.0);
 
-    merge_laser_scan(laser1_, merged_scan, 0.72, -0.324, 2.35619);
-    merge_laser_scan(laser2_, merged_scan, -0.72, 0.324, -0.785398);
+    merge_laser_scan(laser1_, merged_scan, 0.0, 0.0, 0.0);
+    // merge_laser_scan(laser2_, merged_scan, -0.72, 0.324, -0.785398);
 
     laser_scan_pub_->publish(*merged_scan);
   }
