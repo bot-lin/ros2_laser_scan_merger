@@ -87,6 +87,25 @@ private:
 
   void merge_laser_scan(const sensor_msgs::msg::LaserScan::SharedPtr& input_scan, const sensor_msgs::msg::LaserScan::SharedPtr& output_scan, float x_offset, float y_offset, float yaw_offset)
   {
+    geometry_msgs::msg::TransformStamped transformStamped;
+        //scan1
+        std::string fromFrameRel ="laser";
+        transformStamped = tf_buffer_->lookupTransform(
+          fromFrameRel, target_frame_,
+          tf2::TimePointZero);
+          //print the transform translation and rotation
+    RCLCPP_INFO(this->get_logger(), "I heard: '%f' '%f'", transformStamped.transform.translation.x,
+            transformStamped.transform.translation.y);
+    //convert quanternion to rpy
+    tf2::Quaternion q(
+      transformStamped.transform.rotation.x,
+      transformStamped.transform.rotation.y,
+      transformStamped.transform.rotation.z,
+      transformStamped.transform.rotation.w);
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+    RCLCPP_INFO(this->get_logger(), "I heard: '%f' '%f' '%f'", roll,
+            pitch, yaw);
     tf2::Transform transform;
     transform.setOrigin(tf2::Vector3(x_offset, y_offset, 0.0));
     tf2::Quaternion q;
