@@ -88,7 +88,7 @@ public:
         topic2_, default_qos, std::bind(&scanMerger::scan_callback2, this, std::placeholders::_1));
 
     point_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(cloudTopic_, rclcpp::SensorDataQoS());
-    laser_scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan/merge", rclcpp::SensorDataQoS());
+    laser_scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", rclcpp::SensorDataQoS());
     RCLCPP_INFO(this->get_logger(), "Hello");
   }
 
@@ -451,7 +451,7 @@ private:
   {
     this->get_parameter_or<std::string>("pointCloudTopic", cloudTopic_, "pointCloud");
     this->get_parameter_or<std::string>("pointCloutFrameId", cloudFrameId_, "laser");
-    this->get_parameter_or<std::string>("scanTopic1", topic1_, "scan");
+    this->get_parameter_or<std::string>("scanTopic1", topic1_, "scan1");
     this->get_parameter_or<float>("laser1XOff", laser1XOff_, 0.0);
     this->get_parameter_or<float>("laser1YOff", laser1YOff_, 0.0);
     this->get_parameter_or<float>("laser1ZOff", laser1ZOff_, 0.0);
