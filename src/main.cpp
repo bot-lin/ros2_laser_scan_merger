@@ -118,8 +118,8 @@ private:
     auto merged_scan = std::make_shared<sensor_msgs::msg::LaserScan>();
     merged_scan->header.stamp = this->now();
     merged_scan->header.frame_id = "base_link";
-    merged_scan->angle_min = -M_PI;
-    merged_scan->angle_max = M_PI;
+    merged_scan->angle_min = 0.0;
+    merged_scan->angle_max = M_PI * 2;
     merged_scan->angle_increment = std::min(laser1_->angle_increment, laser2_->angle_increment);
     merged_scan->time_increment = std::min(laser1_->time_increment, laser2_->time_increment);
     merged_scan->scan_time = std::max(laser1_->scan_time, laser2_->scan_time);
@@ -187,6 +187,9 @@ private:
 
       float transformed_angle = std::atan2(point[1], point[0]);
       float transformed_range = sqrt(pow(point[0], 2) + pow(point[1], 2));
+      if (transformed_angle < 0) {
+        transformed_angle += 2 * M_PI;
+      }
 
       if (transformed_angle < output_scan->angle_min || transformed_angle > output_scan->angle_max) {
         // angle += input_scan->angle_increment;
