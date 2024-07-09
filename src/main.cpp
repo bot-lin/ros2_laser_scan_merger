@@ -139,10 +139,11 @@ private:
   void merge_laser_scan(const sensor_msgs::msg::LaserScan::SharedPtr& input_scan, const sensor_msgs::msg::LaserScan::SharedPtr& output_scan, float x_offset, float y_offset, float yaw_offset)
   {
     if (!found_tf_){
+      std::string fromFrameRel ="laser";
           try{
         geometry_msgs::msg::TransformStamped transformStamped;
         //scan1
-        std::string fromFrameRel ="laser";
+        
         transformStamped = tf_buffer_->lookupTransform(
           fromFrameRel, "base_link",
           tf2::TimePointZero);
