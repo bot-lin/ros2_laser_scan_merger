@@ -33,22 +33,22 @@ Matrix4x4 quaternionToMatrix(const Quaternion& q, const Vector4& v) {
     matrix[0][0] = 1 - 2 * q.y * q.y - 2 * q.z * q.z;
     matrix[0][1] = 2 * q.x * q.y - 2 * q.z * q.w;
     matrix[0][2] = 2 * q.x * q.z + 2 * q.y * q.w;
-    matrix[0][3] = 0;
+    matrix[0][3] = v[0];
 
     matrix[1][0] = 2 * q.x * q.y + 2 * q.z * q.w;
     matrix[1][1] = 1 - 2 * q.x * q.x - 2 * q.z * q.z;
     matrix[1][2] = 2 * q.y * q.z - 2 * q.x * q.w;
-    matrix[1][3] = 0;
+    matrix[1][3] = v[1];
 
     matrix[2][0] = 2 * q.x * q.z - 2 * q.y * q.w;
     matrix[2][1] = 2 * q.y * q.z + 2 * q.x * q.w;
     matrix[2][2] = 1 - 2 * q.x * q.x - 2 * q.y * q.y;
-    matrix[2][3] = 0;
+    matrix[2][3] = v[2];
 
-    matrix[3][0] = v[0];
-    matrix[3][1] = v[1];
-    matrix[3][2] = v[2];
-    matrix[3][3] = v[3];
+    matrix[3][0] = 0;
+    matrix[3][1] = 0;
+    matrix[3][2] = 0;
+    matrix[3][3] = 1;
 
     return matrix;
 }
