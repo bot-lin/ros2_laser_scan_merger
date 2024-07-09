@@ -120,36 +120,26 @@ private:
     merged_scan->ranges.resize(total_ranges, std::numeric_limits<float>::infinity());
     merged_scan->intensities.resize(total_ranges, 0.0);
 
-    merge_laser_scan(laser1_, merged_scan, 0.364160, -0.074248, 2.35619);
-    // merge_laser_scan(laser2_, merged_scan, -0.72, 0.324, -0.785398);
-
-    laser_scan_pub_->publish(*merged_scan);
-  }
-
-  void merge_laser_scan(const sensor_msgs::msg::LaserScan::SharedPtr& input_scan, const sensor_msgs::msg::LaserScan::SharedPtr& output_scan, float x_offset, float y_offset, float yaw_offset)
-  {
     if (!found_tf_){
       std::string fromFrameRel ="laser_merge";
       std::string toFrameRel ="laser";
+      std::string toFrameRel2 = "laser2";
           try{
         geometry_msgs::msg::TransformStamped transformStamped;
+        Quaternion q = {0, 0, 0, 0};
         //scan1
-        
         transformStamped = tf_buffer_->lookupTransform(
           fromFrameRel, toFrameRel,
           tf2::TimePointZero);
-        Quaternion q = {transformStamped.transform.rotation.w, transformStamped.transform.rotation.x, transformStamped.transform.rotation.y, transformStamped.transform.rotation.z};
+        q = {transformStamped.transform.rotation.w, transformStamped.transform.rotation.x, transformStamped.transform.rotation.y, transformStamped.transform.rotation.z};
         scan1_tf_matrix_ = quaternionToMatrix(q, {transformStamped.transform.translation.x, transformStamped.transform.translation.y, transformStamped.transform.translation.z, 1.0});
-         RCLCPP_INFO(this->get_logger(), "translation: '%f' '%f'", transformStamped.transform.translation.x,
-            transformStamped.transform.translation.y);
-          RCLCPP_INFO(this->get_logger(), "rotation: '%f' '%f' '%f' '%f'", q.w, q.x, q.y, q.z);
-        // //scan2
-        // std::string fromFrameRel2 ="laser2";
-        // transformStamped = tf_buffer_->lookupTransform(
-        //   fromFrameRel2, target_frame_,
-        //   tf2::TimePointZero);
-        // q = {transformStamped.transform.rotation.w, transformStamped.transform.rotation.x, transformStamped.transform.rotation.y, transformStamped.transform.rotation.z};
-        // scan2_tf_matrix_ = quaternionToMatrix(q);
+        ///scan2
+        transformStamped = tf_buffer_->lookupTransform(
+          fromFrameRel, toFrameRel2,
+          tf2::TimePointZero);
+        q = {transformStamped.transform.rotation.w, transformStamped.transform.rotation.x, transformStamped.transform.rotation.y, transformStamped.transform.rotation.z};
+        scan2_tf_matrix_ = quaternionToMatrix(q, {transformStamped.transform.translation.x, transformStamped.transform.translation.y, transformStamped.transform.translation.z, 1.0});
+       
 
         found_tf_ = true;
       } catch (tf2::TransformException & ex) {
@@ -160,12 +150,15 @@ private:
         return;
       }
     }
-            
-    tf2::Transform transform;
-    transform.setOrigin(tf2::Vector3(x_offset, y_offset, 0.0));
-    tf2::Quaternion q;
-    q.setRPY(0, 0, yaw_offset);
-    transform.setRotation(q);
+
+    merge_laser_scan(laser1_, merged_scan, scan1_tf_matrix_);
+    // merge_laser_scan(laser2_, merged_scan, -0.72, 0.324, -0.785398);
+
+    laser_scan_pub_->publish(*merged_scan);
+  }
+
+  void merge_laser_scan(const sensor_msgs::msg::LaserScan::SharedPtr& input_scan, const sensor_msgs::msg::LaserScan::SharedPtr& output_scan, const std::array<std::array<double, 4>, 4> tranform_matrix)
+  {
 
     float angle = input_scan->angle_min;
     for (size_t i = 0; i < input_scan->ranges.size(); ++i) {
@@ -177,7 +170,7 @@ private:
 
       // tf2::Vector3 point(input_scan->ranges[i] * std::cos(angle), input_scan->ranges[i] * std::sin(angle), 0.0);
       Vector4 point = {input_scan->ranges[i] * std::cos(angle), input_scan->ranges[i] * std::sin(angle), 0.0, 1.0};
-      point = transformPoint(scan1_tf_matrix_, point);
+      point = transformPoint(tranform_matrix, point);
       // point = transform * point;
 
       float transformed_angle = std::atan2(point[1], point[0]);
@@ -505,7 +498,7 @@ private:
   uint8_t laser2R_, laser2G_, laser2B_;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
-  std::array<std::array<double, 4>, 4> scan1_tf_matrix_;
+  std::array<std::array<double, 4>, 4> scan1_tf_matrix_, scan2_tf_matrix_;
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub1_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub2_;
