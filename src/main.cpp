@@ -148,6 +148,9 @@ private:
           tf2::TimePointZero);
         Quaternion q = {transformStamped.transform.rotation.w, transformStamped.transform.rotation.x, transformStamped.transform.rotation.y, transformStamped.transform.rotation.z};
         scan1_tf_matrix_ = quaternionToMatrix(q);
+         RCLCPP_INFO(this->get_logger(), "translation: '%f' '%f'", transformStamped.transform.translation.x,
+            transformStamped.transform.translation.y);
+          RCLCPP_INFO(this->get_logger(), "rotation: '%f' '%f' '%f' '%f'", q.w, q.x, q.y, q.z);
         // //scan2
         // std::string fromFrameRel2 ="laser2";
         // transformStamped = tf_buffer_->lookupTransform(
@@ -160,7 +163,7 @@ private:
       } catch (tf2::TransformException & ex) {
         RCLCPP_INFO(
           this->get_logger(), "Could not transform %s to %s: %s",
-          "laser1", "base_link", ex.what());
+          fromFrameRel.c_str() , "base_link", ex.what());
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         return;
       }
