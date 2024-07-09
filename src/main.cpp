@@ -27,7 +27,7 @@ struct Quaternion {
     double w, x, y, z;
 };
 
-Matrix4x4 quaternionToMatrix(const Quaternion& q) {
+Matrix4x4 quaternionToMatrix(const Quaternion& q, const Vector4& v = {0, 0, 0, 1}) {
     Matrix4x4 matrix = {0};
 
     matrix[0][0] = 1 - 2 * q.y * q.y - 2 * q.z * q.z;
@@ -45,10 +45,10 @@ Matrix4x4 quaternionToMatrix(const Quaternion& q) {
     matrix[2][2] = 1 - 2 * q.x * q.x - 2 * q.y * q.y;
     matrix[2][3] = 0;
 
-    matrix[3][0] = 0;
-    matrix[3][1] = 0;
-    matrix[3][2] = 0;
-    matrix[3][3] = 1;
+    matrix[3][0] = v[0];
+    matrix[3][1] = v[1];
+    matrix[3][2] = v[2];
+    matrix[3][3] = v[3];
 
     return matrix;
 }
@@ -149,7 +149,7 @@ private:
           fromFrameRel, toFrameRel,
           tf2::TimePointZero);
         Quaternion q = {transformStamped.transform.rotation.w, transformStamped.transform.rotation.x, transformStamped.transform.rotation.y, transformStamped.transform.rotation.z};
-        scan1_tf_matrix_ = quaternionToMatrix(q);
+        scan1_tf_matrix_ = quaternionToMatrix(q, {transformStamped.transform.translation.x, transformStamped.transform.translation.y, transformStamped.transform.translation.z, 1.0});
          RCLCPP_INFO(this->get_logger(), "translation: '%f' '%f'", transformStamped.transform.translation.x,
             transformStamped.transform.translation.y);
           RCLCPP_INFO(this->get_logger(), "rotation: '%f' '%f' '%f' '%f'", q.w, q.x, q.y, q.z);
