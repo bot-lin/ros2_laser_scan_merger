@@ -139,13 +139,14 @@ private:
   void merge_laser_scan(const sensor_msgs::msg::LaserScan::SharedPtr& input_scan, const sensor_msgs::msg::LaserScan::SharedPtr& output_scan, float x_offset, float y_offset, float yaw_offset)
   {
     if (!found_tf_){
-      std::string fromFrameRel ="laser";
+      std::string fromFrameRel ="base_link";
+      std::string toFrameRel ="laser";
           try{
         geometry_msgs::msg::TransformStamped transformStamped;
         //scan1
         
         transformStamped = tf_buffer_->lookupTransform(
-          fromFrameRel, "base_link",
+          fromFrameRel, toFrameRel,
           tf2::TimePointZero);
         Quaternion q = {transformStamped.transform.rotation.w, transformStamped.transform.rotation.x, transformStamped.transform.rotation.y, transformStamped.transform.rotation.z};
         scan1_tf_matrix_ = quaternionToMatrix(q);
@@ -164,7 +165,7 @@ private:
       } catch (tf2::TransformException & ex) {
         RCLCPP_INFO(
           this->get_logger(), "Could not transform %s to %s: %s",
-          fromFrameRel.c_str() , "base_link", ex.what());
+          fromFrameRel.c_str() , toFrameRel.c_str(), ex.what());
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         return;
       }
