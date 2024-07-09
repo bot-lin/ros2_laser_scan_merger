@@ -27,7 +27,7 @@ struct Quaternion {
     double w, x, y, z;
 };
 
-Matrix4x4 quaternionToMatrix(const Quaternion& q, const Vector4& v = {0, 0, 0, 1}) {
+Matrix4x4 quaternionToMatrix(const Quaternion& q, const Vector4& v) {
     Matrix4x4 matrix = {0};
 
     matrix[0][0] = 1 - 2 * q.y * q.y - 2 * q.z * q.z;
@@ -55,12 +55,19 @@ Matrix4x4 quaternionToMatrix(const Quaternion& q, const Vector4& v = {0, 0, 0, 1
 
 Vector4 transformPoint(const Matrix4x4 &transformMatrix, const Vector4 &point) {
   Vector4 transformedPoint = {0, 0, 0, 0};
+  RCLCPP_INFO(this->get_logger(), "-----------------------");
+  RCLCPP_INFO(this->get_logger(), "point: '%f' '%f' '%f' '%f'", point[0], point[1], point[2], point[3]);
+  RCLCPP_INFO(this->get_logger(), "matrix: '%f' '%f' '%f' '%f'", transformMatrix[0][0], transformMatrix[0][1], transformMatrix[0][2], transformMatrix[0][3]);
+  RCLCPP_INFO(this->get_logger(), "matrix: '%f' '%f' '%f' '%f'", transformMatrix[1][0], transformMatrix[1][1], transformMatrix[1][2], transformMatrix[1][3]);
+  RCLCPP_INFO(this->get_logger(), "matrix: '%f' '%f' '%f' '%f'", transformMatrix[2][0], transformMatrix[2][1], transformMatrix[2][2], transformMatrix[2][3]);
+  RCLCPP_INFO(this->get_logger(), "matrix: '%f' '%f' '%f' '%f'", transformMatrix[3][0], transformMatrix[3][1], transformMatrix[3][2], transformMatrix[3][3]);
 
   for (int i = 0; i < 4; ++i) {
       for (int j = 0; j < 4; ++j) {
           transformedPoint[i] += transformMatrix[i][j] * point[j];
       }
   }
+  RCLCPP_INFO(this->get_logger(), "transformed point: '%f' '%f' '%f' '%f'", transformedPoint[0], transformedPoint[1], transformedPoint[2], transformedPoint[3]);
 
   return transformedPoint;
 }
