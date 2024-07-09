@@ -20,6 +20,51 @@
 #include <array>
 #include <iostream>
 
+using Matrix4x4 = std::array<std::array<double, 4>, 4>;
+using Vector4 = std::array<double, 4>;
+
+struct Quaternion {
+    double w, x, y, z;
+};
+
+Matrix4x4 quaternionToMatrix(const Quaternion& q) {
+    Matrix4x4 matrix = {0};
+
+    matrix[0][0] = 1 - 2 * q.y * q.y - 2 * q.z * q.z;
+    matrix[0][1] = 2 * q.x * q.y - 2 * q.z * q.w;
+    matrix[0][2] = 2 * q.x * q.z + 2 * q.y * q.w;
+    matrix[0][3] = 0;
+
+    matrix[1][0] = 2 * q.x * q.y + 2 * q.z * q.w;
+    matrix[1][1] = 1 - 2 * q.x * q.x - 2 * q.z * q.z;
+    matrix[1][2] = 2 * q.y * q.z - 2 * q.x * q.w;
+    matrix[1][3] = 0;
+
+    matrix[2][0] = 2 * q.x * q.z - 2 * q.y * q.w;
+    matrix[2][1] = 2 * q.y * q.z + 2 * q.x * q.w;
+    matrix[2][2] = 1 - 2 * q.x * q.x - 2 * q.y * q.y;
+    matrix[2][3] = 0;
+
+    matrix[3][0] = 0;
+    matrix[3][1] = 0;
+    matrix[3][2] = 0;
+    matrix[3][3] = 1;
+
+    return matrix;
+}
+
+Vector4 transformPoint(const Matrix4x4 &transformMatrix, const Vector4 &point) {
+  Vector4 transformedPoint = {0, 0, 0, 0};
+
+  for (int i = 0; i < 4; ++i) {
+      for (int j = 0; j < 4; ++j) {
+          transformedPoint[i] += transformMatrix[i][j] * point[j];
+      }
+  }
+
+  return transformedPoint;
+}
+
 class scanMerger : public rclcpp::Node
 {
 public:
@@ -34,6 +79,7 @@ public:
       std::make_unique<tf2_ros::Buffer>(this->get_clock());
     transform_listener_ =
       std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+    found_tf_ = false;
 
     auto default_qos = rclcpp::QoS(rclcpp::SensorDataQoS());
     sub1_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
@@ -92,25 +138,34 @@ private:
 
   void merge_laser_scan(const sensor_msgs::msg::LaserScan::SharedPtr& input_scan, const sensor_msgs::msg::LaserScan::SharedPtr& output_scan, float x_offset, float y_offset, float yaw_offset)
   {
-    geometry_msgs::msg::TransformStamped transformStamped;
+    if (!found_tf_){
+          try{
+        geometry_msgs::msg::TransformStamped transformStamped;
         //scan1
         std::string fromFrameRel ="laser";
         transformStamped = tf_buffer_->lookupTransform(
           fromFrameRel, "base_link",
           tf2::TimePointZero);
-          //print the transform translation and rotation
-    RCLCPP_INFO(this->get_logger(), "I heard: '%f' '%f'", transformStamped.transform.translation.x,
-            transformStamped.transform.translation.y);
-    //convert quanternion to rpy
-    tf2::Quaternion q1(
-      transformStamped.transform.rotation.x,
-      transformStamped.transform.rotation.y,
-      transformStamped.transform.rotation.z,
-      transformStamped.transform.rotation.w);
-    double roll, pitch, yaw;
-    tf2::Matrix3x3(q1).getRPY(roll, pitch, yaw);
-    RCLCPP_INFO(this->get_logger(), "I heard: '%f' '%f' '%f'", roll,
-            pitch, yaw);
+        Quaternion q = {transformStamped.transform.rotation.w, transformStamped.transform.rotation.x, transformStamped.transform.rotation.y, transformStamped.transform.rotation.z};
+        scan1_tf_matrix_ = quaternionToMatrix(q);
+        // //scan2
+        // std::string fromFrameRel2 ="laser2";
+        // transformStamped = tf_buffer_->lookupTransform(
+        //   fromFrameRel2, target_frame_,
+        //   tf2::TimePointZero);
+        // q = {transformStamped.transform.rotation.w, transformStamped.transform.rotation.x, transformStamped.transform.rotation.y, transformStamped.transform.rotation.z};
+        // scan2_tf_matrix_ = quaternionToMatrix(q);
+
+        found_tf_ = true;
+      } catch (tf2::TransformException & ex) {
+        RCLCPP_INFO(
+          this->get_logger(), "Could not transform %s to %s: %s",
+          "laser1", target_frame_.c_str(), ex.what());
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        return;
+      }
+    }
+            
     tf2::Transform transform;
     transform.setOrigin(tf2::Vector3(x_offset, y_offset, 0.0));
     tf2::Quaternion q;
@@ -125,11 +180,13 @@ private:
         continue;
       }
 
-      tf2::Vector3 point(input_scan->ranges[i] * std::cos(angle), input_scan->ranges[i] * std::sin(angle), 0.0);
-      point = transform * point;
+      // tf2::Vector3 point(input_scan->ranges[i] * std::cos(angle), input_scan->ranges[i] * std::sin(angle), 0.0);
+      Vector4 point = {input_scan->ranges[i] * std::cos(angle), input_scan->ranges[i] * std::sin(angle), 0.0, 1.0};
+      point = transformPoint(scan1_tf_matrix_, point);
+      // point = transform * point;
 
-      float transformed_angle = std::atan2(point.y(), point.x());
-      float transformed_range = point.length();
+      float transformed_angle = std::atan2(point[1], point.x[0]);
+      float transformed_range = sqrt(pow(point[0], 2) + pow(point[1], 2));
 
       if (transformed_angle < output_scan->angle_min || transformed_angle > output_scan->angle_max) {
         // angle += input_scan->angle_increment;
@@ -146,6 +203,8 @@ private:
       // angle += input_scan->angle_increment;
     }
   }
+
+
 
   void update_point_cloud_rgb()
   {
@@ -421,14 +480,15 @@ private:
     this->get_parameter_or<bool>("inverse2", inverse2_, false);
   }
   std::string topic1_, topic2_, cloudTopic_, cloudFrameId_;
-  bool show1_, show2_, flip1_, flip2_, inverse1_, inverse2_;
+  bool show1_, show2_, flip1_, flip2_, inverse1_, inverse2_, found_tf_;
   float laser1XOff_, laser1YOff_, laser1ZOff_, laser1Alpha_, laser1AngleMin_, laser1AngleMax_;
   uint8_t laser1R_, laser1G_, laser1B_;
 
   float laser2XOff_, laser2YOff_, laser2ZOff_, laser2Alpha_, laser2AngleMin_, laser2AngleMax_;
   uint8_t laser2R_, laser2G_, laser2B_;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
-    std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
+  std::shared_ptr<tf2_ros::TransformListener> transform_listener_;
+  std::array<std::array<double, 4>, 4> scan1_tf_matrix_;
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub1_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub2_;
