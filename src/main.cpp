@@ -160,7 +160,7 @@ private:
       } catch (tf2::TransformException & ex) {
         RCLCPP_INFO(
           this->get_logger(), "Could not transform %s to %s: %s",
-          "laser1", target_frame_.c_str(), ex.what());
+          "laser1", "base_link", ex.what());
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         return;
       }
