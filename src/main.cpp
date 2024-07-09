@@ -107,7 +107,7 @@ private:
 
     auto merged_scan = std::make_shared<sensor_msgs::msg::LaserScan>();
     merged_scan->header.stamp = this->now();
-    merged_scan->header.frame_id = "base_link";
+    merged_scan->header.frame_id = "laser_merge";
     merged_scan->angle_min = 0.0;
     merged_scan->angle_max = M_PI * 2;
     merged_scan->angle_increment = std::min(laser1_->angle_increment, laser2_->angle_increment);
@@ -129,7 +129,7 @@ private:
   void merge_laser_scan(const sensor_msgs::msg::LaserScan::SharedPtr& input_scan, const sensor_msgs::msg::LaserScan::SharedPtr& output_scan, float x_offset, float y_offset, float yaw_offset)
   {
     if (!found_tf_){
-      std::string fromFrameRel ="base_link";
+      std::string fromFrameRel ="laser_merge";
       std::string toFrameRel ="laser";
           try{
         geometry_msgs::msg::TransformStamped transformStamped;
