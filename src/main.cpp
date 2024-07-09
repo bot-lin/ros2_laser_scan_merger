@@ -185,7 +185,7 @@ private:
       point = transformPoint(scan1_tf_matrix_, point);
       // point = transform * point;
 
-      float transformed_angle = std::atan2(point[1], point.x[0]);
+      float transformed_angle = std::atan2(point[1], point[0]);
       float transformed_range = sqrt(pow(point[0], 2) + pow(point[1], 2));
 
       if (transformed_angle < output_scan->angle_min || transformed_angle > output_scan->angle_max) {
