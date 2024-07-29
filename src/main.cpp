@@ -85,7 +85,7 @@ public:
     sub2_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
         "scan2", default_qos, std::bind(&scanMerger::scan_callback2, this, std::placeholders::_1));
 
-    laser_scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", 1);
+    laser_scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", rclcpp: SensorDataQoS());
     RCLCPP_INFO(this->get_logger(), "Hello");
   }
 
