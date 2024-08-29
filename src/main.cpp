@@ -116,7 +116,7 @@ private:
     merged_scan->header.frame_id = "laser_merge";
     merged_scan->angle_min = 0.0;
     merged_scan->angle_max = M_PI * 2;
-    merged_scan->angle_increment = std::min(laser1_->angle_increment, laser2_->angle_increment);
+    merged_scan->angle_increment = std::max(laser1_->angle_increment, laser2_->angle_increment);
     merged_scan->time_increment = std::min(laser1_->time_increment, laser2_->time_increment);
     merged_scan->scan_time = std::max(laser1_->scan_time, laser2_->scan_time);
     merged_scan->range_min = std::min(laser1_->range_min, laser2_->range_min);
