@@ -157,8 +157,8 @@ private:
       }
     }
 
-    merge_laser_scan(laser2_, merged_scan, scan1_tf_matrix_);
-    merge_laser_scan(laser1_, merged_scan, scan2_tf_matrix_);
+    merge_laser_scan(laser2_, merged_scan, scan2_tf_matrix_);
+    merge_laser_scan(laser1_, merged_scan, scan1_tf_matrix_);
 
     laser_scan_pub_->publish(*merged_scan);
   }
