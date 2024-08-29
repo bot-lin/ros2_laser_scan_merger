@@ -157,44 +157,56 @@ private:
       }
     }
 
-    merge_laser_scan(laser1_, merged_scan, scan1_tf_matrix_);
-    merge_laser_scan(laser2_, merged_scan, scan2_tf_matrix_);
+    merge_laser_scan(laser2_, merged_scan, scan1_tf_matrix_);
+    merge_laser_scan(laser1_, merged_scan, scan2_tf_matrix_);
 
     laser_scan_pub_->publish(*merged_scan);
   }
 
-  void merge_laser_scan(const sensor_msgs::msg::LaserScan::SharedPtr& input_scan, const sensor_msgs::msg::LaserScan::SharedPtr& output_scan, const std::array<std::array<double, 4>, 4> tranform_matrix)
-  {
-
+void merge_laser_scan(const sensor_msgs::msg::LaserScan::SharedPtr& input_scan, 
+                      const sensor_msgs::msg::LaserScan::SharedPtr& output_scan, 
+                      const std::array<std::array<double, 4>, 4>& transform_matrix)
+{
     float angle = input_scan->angle_min;
     for (size_t i = 0; i < input_scan->ranges.size(); ++i) {
-      angle = input_scan->angle_min + i * input_scan->angle_increment;
-      if (input_scan->ranges[i] < input_scan->range_min || input_scan->ranges[i] > input_scan->range_max) {
-        continue;
-      }
+        angle = input_scan->angle_min + i * input_scan->angle_increment;
 
-      Vector4 point = {input_scan->ranges[i] * std::cos(angle), input_scan->ranges[i] * std::sin(angle), 0.0, 1.0};
-      point = transformPoint(tranform_matrix, point);
-
-      float transformed_angle = std::atan2(point[1], point[0]);
-      float transformed_range = sqrt(pow(point[0], 2) + pow(point[1], 2));
-      if (transformed_angle < 0) {
-        transformed_angle += 2 * M_PI;
-      }
-
-      if (transformed_angle < output_scan->angle_min || transformed_angle > output_scan->angle_max) {
-        continue;
-      }
-
-      size_t index = static_cast<size_t>(std::round((transformed_angle - output_scan->angle_min) / output_scan->angle_increment));
-      if (index < output_scan->ranges.size()) {
-        if (transformed_range < output_scan->ranges[index]) {
-          output_scan->ranges[index] = transformed_range;
-          output_scan->intensities[index] = input_scan->intensities[i];
+        // Check if the current range is valid
+        if (input_scan->ranges[i] < input_scan->range_min || input_scan->ranges[i] > input_scan->range_max) {
+            continue;
         }
-      }
+
+        // Convert the scan point to a 4D vector and transform it
+        Vector4 point = {input_scan->ranges[i] * std::cos(angle), 
+                         input_scan->ranges[i] * std::sin(angle), 
+                         0.0, 
+                         1.0};
+        point = transformPoint(transform_matrix, point);
+
+        // Calculate the transformed angle and range
+        float transformed_angle = std::atan2(point[1], point[0]);
+        float transformed_range = sqrt(pow(point[0], 2) + pow(point[1], 2));
+
+        // Normalize the angle to the range [0, 2 * PI]
+        if (transformed_angle < 0) {
+            transformed_angle += 2 * M_PI;
+        }
+
+        // Ensure the transformed angle is within the output scan's angle range
+        if (transformed_angle < output_scan->angle_min || transformed_angle > output_scan->angle_max) {
+            continue;
+        }
+
+        // Find the index in the output scan corresponding to the transformed angle
+        size_t index = static_cast<size_t>(std::round((transformed_angle - output_scan->angle_min) / output_scan->angle_increment));
+
+        // If the index is valid, overwrite the range and intensity in the output scan
+        if (index < output_scan->ranges.size()) {
+            output_scan->ranges[index] = transformed_range;
+            output_scan->intensities[index] = input_scan->intensities[i];
+        }
     }
-  }
+}
 
 
 
