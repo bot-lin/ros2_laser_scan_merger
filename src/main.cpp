@@ -108,6 +108,7 @@ private:
     void update_merged_scan()
   {
     if (!laser1_ || !laser2_) {
+      RCLCPP_INFO(this->get_logger(), "No laser scan received yet");
       return;
     }
 
