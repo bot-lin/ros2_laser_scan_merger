@@ -107,10 +107,11 @@ private:
 
     void update_merged_scan()
   {
-    if (!laser1_ || !laser2_) {
+    if (laser1_->ranges.size() == 0 || laser2_->ranges.size() == 0) {
       RCLCPP_INFO(this->get_logger(), "No laser scan received yet");
       return;
     }
+
 
     auto merged_scan = std::make_shared<sensor_msgs::msg::LaserScan>();
     merged_scan->header.stamp = this->now();
